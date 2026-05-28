@@ -1,0 +1,171 @@
+{
+  "name": "Employee Request Routing Demo",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "request_type",
+              "value": "employee_request"
+            },
+            {
+              "name": "department",
+              "value": "People Operations"
+            },
+            {
+              "name": "request_summary",
+              "value": "Demo request that needs routing"
+            }
+          ],
+          "number": [
+            {
+              "name": "impact_score",
+              "value": 8
+            },
+            {
+              "name": "effort_score",
+              "value": 4
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "create-request",
+      "name": "Create Demo Request",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$json[\"impact_score\"]}}",
+              "operation": "largerEqual",
+              "value2": 7
+            }
+          ]
+        }
+      },
+      "id": "check-priority",
+      "name": "High Priority?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        700,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "route",
+              "value": "Manager approval"
+            },
+            {
+              "name": "next_step",
+              "value": "Notify owner and update tracker"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "manager-route",
+      "name": "Manager Route",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        940,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "route",
+              "value": "Backlog review"
+            },
+            {
+              "name": "next_step",
+              "value": "Review during roadmap planning"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "backlog-route",
+      "name": "Backlog Route",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        940,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Create Demo Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Demo Request": {
+      "main": [
+        [
+          {
+            "node": "High Priority?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "High Priority?": {
+      "main": [
+        [
+          {
+            "node": "Manager Route",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Backlog Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "demo"
+}
