@@ -1,5 +1,7 @@
 # AI Automation Command Center
 
+Live Demo: https://ai-automation-command-center.streamlit.app/
+
 AI Automation Command Center is an operations decision-support dashboard for identifying, prioritizing, and tracking AI and workflow automation opportunities across internal business teams.
 
 The project is built around a common operations problem: teams often have many automation ideas, but those ideas are not always captured, compared, prioritized, or measured in a structured way. This dashboard provides a simple framework to turn scattered automation ideas into a visible roadmap.
