@@ -28,6 +28,124 @@ REQUIRED_COLUMNS = [
 ]
 
 
+st.markdown(
+    """
+    <style>
+        .main {
+            background-color: #f8fafc;
+        }
+
+        .hero-card {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #334155 100%);
+            padding: 34px;
+            border-radius: 22px;
+            margin-bottom: 24px;
+            color: white;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+        }
+
+        .hero-title {
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .hero-subtitle {
+            font-size: 1.05rem;
+            color: #cbd5e1;
+            max-width: 900px;
+            line-height: 1.6;
+        }
+
+        .hero-tags {
+            margin-top: 18px;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 7px 12px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            border-radius: 999px;
+            background-color: rgba(255, 255, 255, 0.12);
+            color: #e2e8f0;
+            font-size: 0.85rem;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+        }
+
+        .kpi-card {
+            background-color: white;
+            padding: 22px;
+            border-radius: 18px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+        }
+
+        .kpi-label {
+            color: #64748b;
+            font-size: 0.86rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .kpi-value {
+            color: #0f172a;
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+
+        .section-card {
+            background-color: white;
+            padding: 24px;
+            border-radius: 18px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+            margin-bottom: 18px;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 6px;
+        }
+
+        .section-subtitle {
+            color: #64748b;
+            font-size: 0.95rem;
+            margin-bottom: 16px;
+        }
+
+        .insight-card {
+            background-color: #eff6ff;
+            padding: 18px 20px;
+            border-radius: 16px;
+            border-left: 5px solid #2563eb;
+            color: #1e3a8a;
+            margin-bottom: 22px;
+        }
+
+        .small-note {
+            color: #64748b;
+            font-size: 0.92rem;
+            line-height: 1.6;
+        }
+
+        div[data-testid="stDataFrame"] {
+            border-radius: 14px;
+            overflow: hidden;
+        }
+
+        .stDownloadButton button {
+            border-radius: 12px;
+            font-weight: 600;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+
 @st.cache_data
 def load_data() -> pd.DataFrame:
     data = pd.read_csv(DATA_PATH)
@@ -63,7 +181,6 @@ def create_roadmap_view(data: pd.DataFrame) -> pd.DataFrame:
             "process_name",
             "current_pain_point",
             "automation_idea",
-            "workflow_stage",
             "primary_user",
             "status",
             "priority_score",
@@ -75,11 +192,10 @@ def create_roadmap_view(data: pd.DataFrame) -> pd.DataFrame:
             "process_name": "Process",
             "current_pain_point": "Current Pain Point",
             "automation_idea": "Automation Idea",
-            "workflow_stage": "Workflow Stage",
             "primary_user": "Primary User",
             "status": "Status",
             "priority_score": "Priority Score",
-            "estimated_hours_saved_month": "Estimated Hours Saved / Month",
+            "estimated_hours_saved_month": "Hours Saved / Month",
         }
     )
 
@@ -94,6 +210,18 @@ def classify_score(score: float) -> str:
     return "Backlog candidate"
 
 
+def show_kpi_card(label: str, value: str) -> None:
+    st.markdown(
+        f"""
+        <div class="kpi-card">
+            <div class="kpi-label">{label}</div>
+            <div class="kpi-value">{value}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 try:
     df = load_data()
 except FileNotFoundError:
@@ -104,13 +232,29 @@ except ValueError as error:
     st.stop()
 
 
-st.title("AI Automation Command Center")
-st.caption(
-    "An operations decision-support dashboard for prioritizing AI and workflow automation opportunities across business teams."
+st.markdown(
+    """
+    <div class="hero-card">
+        <div class="hero-title">AI Automation Command Center</div>
+        <div class="hero-subtitle">
+            Operations decision-support dashboard for identifying, prioritizing, and tracking
+            AI and workflow automation opportunities across business teams.
+        </div>
+        <div class="hero-tags">
+            <span class="tag">AI Adoption</span>
+            <span class="tag">Workflow Automation</span>
+            <span class="tag">Operations Analytics</span>
+            <span class="tag">Roadmap Prioritization</span>
+            <span class="tag">BI-style Reporting</span>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
 
+
 with st.sidebar:
-    st.header("View options")
+    st.header("Dashboard filters")
 
     departments = st.multiselect(
         "Department",
@@ -123,6 +267,13 @@ with st.sidebar:
         sorted(df["status"].unique()),
         default=sorted(df["status"].unique()),
     )
+
+    st.divider()
+
+    st.caption(
+        "Use the filters to review automation ideas by department and roadmap status."
+    )
+
 
 filtered = df[df["department"].isin(departments) & df["status"].isin(statuses)]
 
@@ -141,10 +292,15 @@ hours_saved = int(filtered["estimated_hours_saved_month"].sum())
 avg_priority = round(filtered["priority_score"].mean(), 1)
 
 kpi1, kpi2, kpi3, kpi4 = st.columns(4)
-kpi1.metric("Automation ideas", total_ideas)
-kpi2.metric("Ready for pilot", ready_for_pilot)
-kpi3.metric("Estimated hours saved / month", hours_saved)
-kpi4.metric("Average priority score", avg_priority)
+with kpi1:
+    show_kpi_card("Automation ideas", str(total_ideas))
+with kpi2:
+    show_kpi_card("Ready for pilot", str(ready_for_pilot))
+with kpi3:
+    show_kpi_card("Hours saved / month", str(hours_saved))
+with kpi4:
+    show_kpi_card("Avg. priority score", str(avg_priority))
+
 
 top_opportunity = filtered.sort_values("priority_score", ascending=False).iloc[0]
 ready_hours = int(
@@ -153,17 +309,32 @@ ready_hours = int(
     ]["estimated_hours_saved_month"].sum()
 )
 
-st.info(
-    f"Highest priority opportunity: **{top_opportunity['process_name']}** "
-    f"for **{top_opportunity['department']}** with a priority score of "
-    f"**{top_opportunity['priority_score']}**. Current ready-for-pilot ideas represent "
-    f"an estimated **{ready_hours} hours saved per month**."
+st.markdown(
+    f"""
+    <div class="insight-card">
+        <strong>Executive insight:</strong>
+        Highest priority opportunity is <strong>{top_opportunity['process_name']}</strong>
+        in <strong>{top_opportunity['department']}</strong>, with a priority score of
+        <strong>{top_opportunity['priority_score']}</strong>. Current ready-for-pilot ideas
+        represent an estimated <strong>{ready_hours} hours saved per month</strong>.
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
 
-st.divider()
 
-
-st.subheader("Automation roadmap")
+st.markdown(
+    """
+    <div class="section-card">
+        <div class="section-title">Automation roadmap</div>
+        <div class="section-subtitle">
+            Prioritized view of automation opportunities based on impact, effort, confidence,
+            and estimated time-saving value.
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 roadmap = filtered.sort_values("priority_score", ascending=False)
 roadmap_display = create_roadmap_view(roadmap)
@@ -202,10 +373,18 @@ The priority score is a simple first-pass decision model. It is used to compare 
 """
     )
 
-st.divider()
 
-
-st.subheader("Priority ranking")
+st.markdown(
+    """
+    <div class="section-card">
+        <div class="section-title">Priority ranking</div>
+        <div class="section-subtitle">
+            Higher scores indicate stronger candidates for discovery or pilot execution.
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 chart_data = filtered.sort_values("priority_score", ascending=True)
 
@@ -243,13 +422,21 @@ fig.update_layout(
 
 st.plotly_chart(fig, use_container_width=True)
 
-st.divider()
-
 
 chart1, chart2 = st.columns(2)
 
 with chart1:
-    st.subheader("Potential time saving")
+    st.markdown(
+        """
+        <div class="section-card">
+            <div class="section-title">Potential time saving</div>
+            <div class="section-subtitle">
+                Estimated monthly time reduction by automation opportunity.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     hours_chart = px.bar(
         filtered.sort_values("estimated_hours_saved_month", ascending=False),
@@ -281,7 +468,17 @@ with chart1:
     st.plotly_chart(hours_chart, use_container_width=True)
 
 with chart2:
-    st.subheader("Roadmap status")
+    st.markdown(
+        """
+        <div class="section-card">
+            <div class="section-title">Roadmap status</div>
+            <div class="section-subtitle">
+                Distribution of automation ideas by current delivery stage.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     status_counts = filtered["status"].value_counts().reset_index()
     status_counts.columns = ["Status", "Count"]
@@ -290,22 +487,28 @@ with chart2:
         status_counts,
         names="Status",
         values="Count",
-        hole=0.35,
+        hole=0.42,
     )
 
     status_chart.update_layout(
         height=430,
         margin=dict(l=20, r=20, t=20, b=40),
+        showlegend=True,
     )
 
     st.plotly_chart(status_chart, use_container_width=True)
 
-st.divider()
 
-
-st.subheader("Idea scoring demo")
-st.write(
-    "This form demonstrates how a team could submit an automation idea and receive a first-pass prioritization score."
+st.markdown(
+    """
+    <div class="section-card">
+        <div class="section-title">Idea scoring demo</div>
+        <div class="section-subtitle">
+            Simulates how a new automation idea could be submitted and reviewed using a first-pass score.
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
 
 with st.form("automation_idea_form"):
@@ -346,6 +549,7 @@ with st.form("automation_idea_form"):
 
     submitted = st.form_submit_button("Score idea")
 
+
 if submitted:
     score = round((impact * 2.0) + (confidence * 1.5) + 5 - effort, 1)
     classification = classify_score(score)
@@ -372,27 +576,24 @@ if submitted:
         hide_index=True,
     )
 
-    st.write(
+    st.info(
         "Suggested next step: confirm data availability, check integration options, validate the process owner, and decide whether this should move into discovery, pilot, or backlog."
     )
 
-st.divider()
 
-
-st.subheader("Project scope and assumptions")
 st.markdown(
     """
-This project focuses on the operating model behind internal automation rather than only the technical implementation.
-
-It demonstrates how teams can:
-
-- collect practical automation ideas from different business functions
-- compare opportunities using consistent scoring logic
-- maintain a visible automation roadmap
-- connect automation work with operational reporting
-- show leadership where time, speed, and quality improvements may come from
-- prepare future integration with workflow tools such as n8n or internal approval systems
-
-The data used in this project is fictional sample data created for public portfolio use.
-"""
+    <div class="section-card">
+        <div class="section-title">Project scope and assumptions</div>
+        <div class="small-note">
+            This project focuses on the operating model behind internal automation rather than only the technical implementation.
+            It demonstrates how teams can collect automation ideas, compare opportunities using consistent scoring logic,
+            maintain a visible roadmap, connect automation work with operational reporting, and prepare future integration
+            with workflow tools such as n8n or internal approval systems.
+            <br><br>
+            The data used in this project is fictional sample data created for public portfolio use.
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
