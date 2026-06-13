@@ -4,6 +4,8 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
+from src.scoring import calculate_priority_score, classify_score
+
 
 st.set_page_config(
     page_title="AI Automation Command Center",
@@ -164,12 +166,15 @@ def load_data() -> pd.DataFrame:
     for column in numeric_columns:
         data[column] = pd.to_numeric(data[column], errors="coerce").fillna(0)
 
-    data["priority_score"] = (
-        (data["impact_score"] * 2.0)
-        + (data["confidence_score"] * 1.5)
-        + (data["estimated_hours_saved_month"] / 6)
-        - data["effort_score"]
-    ).round(1)
+    data["priority_score"] = data.apply(
+        lambda row: calculate_priority_score(
+            impact=row["impact_score"],
+            effort=row["effort_score"],
+            confidence=row["confidence_score"],
+            estimated_hours_saved_month=row["estimated_hours_saved_month"],
+        ),
+        axis=1,
+    )
 
     return data
 
@@ -198,16 +203,6 @@ def create_roadmap_view(data: pd.DataFrame) -> pd.DataFrame:
             "estimated_hours_saved_month": "Hours Saved / Month",
         }
     )
-
-
-def classify_score(score: float) -> str:
-    if score >= 27:
-        return "Strong pilot candidate"
-    if score >= 22:
-        return "Good discovery candidate"
-    if score >= 17:
-        return "Needs more validation"
-    return "Backlog candidate"
 
 
 def show_kpi_card(label: str, value: str) -> None:
@@ -546,12 +541,13 @@ with st.form("automation_idea_form"):
         impact = st.slider("Impact", 1, 10, 7)
         effort = st.slider("Effort", 1, 10, 5)
         confidence = st.slider("Confidence", 1, 10, 7)
+        estimated_hours_saved = st.slider("Estimated hours saved / month", 0, 120, 30)
 
     submitted = st.form_submit_button("Score idea")
 
 
 if submitted:
-    score = round((impact * 2.0) + (confidence * 1.5) + 5 - effort, 1)
+    score = calculate_priority_score(impact, effort, confidence, estimated_hours_saved)
     classification = classify_score(score)
 
     st.success(f"First-pass priority score: {score} — {classification}")
@@ -564,6 +560,7 @@ if submitted:
                 "Impact": impact,
                 "Effort": effort,
                 "Confidence": confidence,
+                "Estimated Hours Saved / Month": estimated_hours_saved,
                 "Priority Score": score,
                 "Recommendation": classification,
             }
